@@ -137,7 +137,7 @@ lc_Gcodedlg::lc_Gcodedlg(Document_Interface *doc, QWidget *parent)
 }
 
 
-static QVector<lc_Gcodedlg::Line> circleToLines(QPointF center, double radius, double error)
+static QVector<lc_Gcodedlg::Line> arcToLines(QPointF center, double radius, double error, double startAngle, double endAngle, bool reversed)
 {
     QVector<lc_Gcodedlg::Line> lines;
     int n = qMax(3, qCeil(M_PI/acos(radius/(error+radius))));
@@ -145,12 +145,15 @@ static QVector<lc_Gcodedlg::Line> circleToLines(QPointF center, double radius, d
     double realError = outrad - radius;
     radius -= realError / 2;
     outrad -= realError / 2;
-    qDebug() << "Rad:" << radius << outrad << outrad;
-    qDebug() << "Circle with" << n << "points";
-    QPointF prev(center.x() + outrad, center.y());
+    auto pointAtAngle = [center, outrad](double angle) {
+        return QPointF(center.x() + outrad * qCos(angle),
+                       center.y() + outrad * qSin(angle));
+    };
+    QPointF prev = pointAtAngle(startAngle);
+    if (reversed)
+        qSwap(startAngle, endAngle);
     for (int i = 1; i <= n; ++i) {
-        QPointF p(center.x() + outrad * qCos((i * 2 * M_PI) / double(n)),
-                  center.y() + outrad * qSin((i * 2 * M_PI) / double(n)));
+        QPointF p = pointAtAngle(startAngle + i * (endAngle - startAngle) / n);
         lines.append(lc_Gcodedlg::Line(prev, p));
         prev = p;
     }
@@ -196,8 +199,18 @@ void lc_Gcodedlg::generateGcode()
             center.setX(data.value(DPI::STARTX).toFloat());
             center.setY(data.value(DPI::STARTY).toFloat());
             float radius = data.value(DPI::RADIUS).toFloat();
-
-            m_lines.append(circleToLines(center, radius, maxError));
+            m_lines.append(arcToLines(center, radius, maxError, 0, 0, false));
+            break;
+        }
+        case DPI::ARC: {
+            QPointF center;
+            center.setX(data.value(DPI::STARTX).toFloat());
+            center.setY(data.value(DPI::STARTY).toFloat());
+            float radius = data.value(DPI::RADIUS).toFloat();
+            float startAngle = data.value(DPI::STARTANGLE).toFloat();
+            float endAngle = data.value(DPI::ENDANGLE).toFloat();
+            bool reversed = data.value(DPI::REVERSED).toBool();
+            m_lines.append(arcToLines(center, radius, maxError, startAngle, endAngle, reversed));
             break;
         }
         default:
@@ -207,7 +220,7 @@ void lc_Gcodedlg::generateGcode()
 
     QPointF currentPosition;;
     for (Line l : m_lines) {
-        //qDebug().noquote() << QString("Line from (%1, %2) to (%3, %4)").arg(l.a.x()).arg(l.a.y()).arg(l.b.x()).arg(l.b.y());
+        qDebug().noquote() << QString("Line from (%1, %2) to (%3, %4)").arg(l.a.x()).arg(l.a.y()).arg(l.b.x()).arg(l.b.y());
         if (currentPosition == l.b)
             qSwap(l.a, l.b);
         if (currentPosition != l.a || currentPosition.isNull()) {
