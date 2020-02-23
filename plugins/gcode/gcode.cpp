@@ -314,9 +314,9 @@ void lc_Gcodedlg::writeSettings()
     m_settings.setValue("size", size());
 
     if (m_startingGcode->toPlainText() != m_settings.value("starting_gcode").toString())
-        m_settings.setValue("starting_gcode", defaultStartingGcode);
+        m_settings.setValue("starting_gcode", m_startingGcode->toPlainText());
     if (m_endingGcode->toPlainText() != m_settings.value("ending_gcode").toString())
-        m_settings.setValue("ending_gcode", defaultEndingGcode);
+        m_settings.setValue("ending_gcode", m_endingGcode->toPlainText());
     m_settings.setValue("feedrate", m_feedrate->value());
     m_settings.setValue("zhop_feedrate", m_zHopFeedrate->value());
     m_settings.setValue("travel_feedrate", m_travelFeedrate->value());
