@@ -172,6 +172,8 @@ void lc_Gcodedlg::generateGcode()
     double maxError = m_maxError->value();
 
     m_gcode = m_startingGcode->toPlainText().toLatin1();
+    if (!m_gcode.endsWith('\n'))
+        m_gcode.append('\n');
 
     QList<Plug_Entity *> selection;
     if (!m_doc->getAllEntities(&selection)) {
