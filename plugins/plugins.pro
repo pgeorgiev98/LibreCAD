@@ -19,7 +19,8 @@ SUBDIRS     = \
         sample \
         picfile \
         plotequation \
-        gear
+        gear \
+        gcode
 
 TRANSLATIONS = ./ts/plugins_ar.ts \
     ./ts/plugins_ca.ts \
