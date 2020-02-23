@@ -176,7 +176,7 @@ void lc_Gcodedlg::generateGcode()
         m_gcode.append('\n');
 
     QList<Plug_Entity *> selection;
-    if (!m_doc->getAllEntities(&selection)) {
+    if (!m_doc->getAllEntities(&selection, true)) {
         qDebug() << "Get entities failed";
         return;
     }
