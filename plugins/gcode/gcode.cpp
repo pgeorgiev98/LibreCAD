@@ -228,7 +228,7 @@ void lc_Gcodedlg::generateGcode()
         if (currentPosition != l.a || currentPosition.isNull()) {
             m_gcode.append(QString("G0 Z%1 F%2\n").arg(zhopheight).arg(zhopfeed));
             m_gcode.append(QString("G0 X%1 Y%2 F%3\n").arg(l.a.x()).arg(l.a.y()).arg(travelfeed));
-            m_gcode.append(QString("G0 Z-%1 F%2\n").arg(zhopheight).arg(zhopfeed));
+            m_gcode.append(QString("G0 Z0 F%1\n").arg(zhopfeed));
         }
         m_gcode.append(QString("G1 X%1 Y%2 F%3\n").arg(l.b.x()).arg(l.b.y()).arg(feedrate));
         currentPosition = l.b;
