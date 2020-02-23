@@ -201,7 +201,7 @@ void lc_Gcodedlg::generateGcode()
             center.setX(data.value(DPI::STARTX).toFloat());
             center.setY(data.value(DPI::STARTY).toFloat());
             float radius = data.value(DPI::RADIUS).toFloat();
-            m_lines.append(arcToLines(center, radius, maxError, 0, 0, false));
+            m_lines.append(arcToLines(center, radius, maxError, 0, 2 * M_PI, false));
             break;
         }
         case DPI::ARC: {
