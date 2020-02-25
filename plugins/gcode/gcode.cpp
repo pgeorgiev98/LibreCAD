@@ -76,6 +76,7 @@ lc_Gcodedlg::lc_Gcodedlg(Document_Interface *doc, QWidget *parent)
     , m_travelFeedrate(new QSpinBox)
     , m_zHopHeight(new QSpinBox)
     , m_maxError(new QDoubleSpinBox)
+    , m_repetitions(new QSpinBox)
 {
     m_feedrate->setButtonSymbols(QSpinBox::NoButtons);
     m_zHopFeedrate->setButtonSymbols(QSpinBox::NoButtons);
@@ -89,6 +90,7 @@ lc_Gcodedlg::lc_Gcodedlg(Document_Interface *doc, QWidget *parent)
     m_zHopHeight->setRange(-1000000000, 1000000000);
     m_maxError->setRange(0.000001, 1000000000);
     m_maxError->setDecimals(6);
+    m_repetitions->setRange(1, 1000000000);
 
     setWindowTitle(tr("Generate Gcode"));
 
@@ -123,6 +125,10 @@ lc_Gcodedlg::lc_Gcodedlg(Document_Interface *doc, QWidget *parent)
     settingsLayout->addWidget(new QLabel("Maximum error: "), row, 0);
     settingsLayout->addWidget(m_maxError, row, 1);
     settingsLayout->addWidget(new QLabel(" mm"), row, 2);
+    ++row;
+    settingsLayout->addWidget(new QLabel("Repeat "), row, 0);
+    settingsLayout->addWidget(m_repetitions, row, 1);
+    settingsLayout->addWidget(new QLabel(" times"), row, 2);
 
     mainLayout->addLayout(gcodeLayout);
     mainLayout->addSpacing(16);
@@ -221,17 +227,19 @@ void lc_Gcodedlg::generateGcode()
     }
 
     QPointF currentPosition;;
-    for (Line l : m_lines) {
-        qDebug().noquote() << QString("Line from (%1, %2) to (%3, %4)").arg(l.a.x()).arg(l.a.y()).arg(l.b.x()).arg(l.b.y());
-        if (currentPosition == l.b)
-            qSwap(l.a, l.b);
-        if (currentPosition != l.a || currentPosition.isNull()) {
-            m_gcode.append(QString("G0 Z%1 F%2\n").arg(zhopheight).arg(zhopfeed));
-            m_gcode.append(QString("G0 X%1 Y%2 F%3\n").arg(l.a.x()).arg(l.a.y()).arg(travelfeed));
-            m_gcode.append(QString("G0 Z0 F%1\n").arg(zhopfeed));
+    for (int i = 0; i < m_repetitions->value(); ++i) {
+        for (Line l : m_lines) {
+            qDebug().noquote() << QString("Line from (%1, %2) to (%3, %4); current: (%5, %6)").arg(l.a.x()).arg(l.a.y()).arg(l.b.x()).arg(l.b.y()).arg(currentPosition.x()).arg(currentPosition.y());
+            if (currentPosition == l.b)
+                qSwap(l.a, l.b);
+            if (currentPosition != l.a || currentPosition.isNull()) {
+                m_gcode.append(QString("G0 Z%1 F%2\n").arg(zhopheight).arg(zhopfeed));
+                m_gcode.append(QString("G0 X%1 Y%2 F%3\n").arg(l.a.x()).arg(l.a.y()).arg(travelfeed));
+                m_gcode.append(QString("G0 Z0 F%1\n").arg(zhopfeed));
+            }
+            m_gcode.append(QString("G1 X%1 Y%2 F%3\n").arg(l.b.x()).arg(l.b.y()).arg(feedrate));
+            currentPosition = l.b;
         }
-        m_gcode.append(QString("G1 X%1 Y%2 F%3\n").arg(l.b.x()).arg(l.b.y()).arg(feedrate));
-        currentPosition = l.b;
     }
 
     m_gcode.append(m_endingGcode->toPlainText().toLatin1());
@@ -302,6 +310,7 @@ void lc_Gcodedlg::readSettings()
     m_travelFeedrate->setValue(m_settings.value("travel_feedrate", defaultTravelFeedrate).toInt());
     m_zHopHeight->setValue(m_settings.value("zhop_height", defaultZHopHeight).toInt());
     m_maxError->setValue(m_settings.value("max_error", defaultMaxError).toDouble());
+    m_repetitions->setValue(m_settings.value("repetitions", 1).toInt());
 
     resize(size);
     move(pos);
@@ -322,4 +331,5 @@ void lc_Gcodedlg::writeSettings()
     m_settings.setValue("travel_feedrate", m_travelFeedrate->value());
     m_settings.setValue("zhop_height", m_zHopHeight->value());
     m_settings.setValue("max_error", m_maxError->value());
+    m_settings.setValue("repetitions", m_repetitions->value());
 }

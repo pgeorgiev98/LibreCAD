@@ -69,6 +69,8 @@ private:
 
     QDoubleSpinBox *m_maxError;
 
+    QSpinBox *m_repetitions;
+
     QVector<Line> m_lines;
     QByteArray m_gcode;
 };
