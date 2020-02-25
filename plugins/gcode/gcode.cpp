@@ -149,9 +149,9 @@ static QVector<lc_Gcodedlg::Line> arcToLines(QPointF center, double radius, doub
         return QPointF(center.x() + outrad * qCos(angle),
                        center.y() + outrad * qSin(angle));
     };
-    QPointF prev = pointAtAngle(startAngle);
     if (reversed)
         qSwap(startAngle, endAngle);
+    QPointF prev = pointAtAngle(startAngle);
     for (int i = 1; i <= n; ++i) {
         QPointF p = pointAtAngle(startAngle + i * (endAngle - startAngle) / n);
         lines.append(lc_Gcodedlg::Line(prev, p));
