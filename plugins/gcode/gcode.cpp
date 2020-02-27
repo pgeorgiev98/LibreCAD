@@ -149,7 +149,6 @@ static QVector<lc_Gcodedlg::Line> arcToLines(QPointF center, double radius, doub
     int n = qMax(3, qCeil(M_PI/acos(radius/(error+radius))));
     double outrad = radius / qCos(M_PI/n);
     double realError = outrad - radius;
-    radius -= realError / 2;
     outrad -= realError / 2;
     auto pointAtAngle = [center, outrad](double angle) {
         return QPointF(center.x() + outrad * qCos(angle),
@@ -160,6 +159,32 @@ static QVector<lc_Gcodedlg::Line> arcToLines(QPointF center, double radius, doub
     QPointF prev = pointAtAngle(startAngle);
     for (int i = 1; i <= n; ++i) {
         QPointF p = pointAtAngle(startAngle + i * (endAngle - startAngle) / n);
+        lines.append(lc_Gcodedlg::Line(prev, p));
+        prev = p;
+    }
+    return lines;
+}
+
+static QVector<lc_Gcodedlg::Line> ellipseToLines(QPointF center, QVector2D a, double ratio, double error)
+{
+    QVector<lc_Gcodedlg::Line> lines;
+    QVector2D b = ratio * QVector2D(-a.x(), a.y());
+    double radA = a.length();
+    double radB = b.length();
+    double largerRad = qMax(radA, radB);
+    int n = qMax(3, qCeil(M_PI/acos(largerRad/(error+largerRad))));
+    double outradA = radA / qCos(M_PI/n);
+    double realErrorA = outradA - radA;
+    double outradB = radB / qCos(M_PI/n);
+    double realErrorB = outradB - radB;
+    auto pointAtAngle = [center, a, b, realErrorA, realErrorB](double angle) {
+        return center + (qCos(angle) * (a + a.normalized() * realErrorA / 2) +
+                         qSin(angle) * (b + b.normalized() * realErrorB / 2)).toPointF();
+    };
+    QPointF prev = pointAtAngle(0);
+    for (int i = 1; i <= n; ++i) {
+        double angle = i * 2 * M_PI / n;
+        QPointF p = pointAtAngle(angle);
         lines.append(lc_Gcodedlg::Line(prev, p));
         prev = p;
     }
@@ -219,6 +244,17 @@ void lc_Gcodedlg::generateGcode()
             float endAngle = data.value(DPI::ENDANGLE).toFloat();
             bool reversed = data.value(DPI::REVERSED).toBool();
             m_lines.append(arcToLines(center, radius, maxError, startAngle, endAngle, reversed));
+            break;
+        }
+        case DPI::ELLIPSE: {
+            QPointF center;
+            QVector2D point;
+            center.setX(data.value(DPI::STARTX).toDouble());
+            center.setY(data.value(DPI::STARTY).toDouble());
+            point.setX(data.value(DPI::ENDX).toDouble());
+            point.setY(data.value(DPI::ENDY).toDouble());
+            double ratio = data.value(DPI::HEIGHT).toDouble();
+            m_lines.append(ellipseToLines(center, point, ratio, maxError));
             break;
         }
         default:
