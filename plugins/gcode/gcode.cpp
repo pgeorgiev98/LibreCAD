@@ -146,6 +146,13 @@ lc_Gcodedlg::lc_Gcodedlg(Document_Interface *doc, QWidget *parent)
 static QVector<lc_Gcodedlg::Line> arcToLines(QPointF center, double radius, double error, double startAngle, double endAngle, bool reversed)
 {
     QVector<lc_Gcodedlg::Line> lines;
+
+    if (reversed)
+        qSwap(startAngle, endAngle);
+    double deltaAngle = endAngle - startAngle;
+    if (deltaAngle < 0)
+        deltaAngle += 2 * M_PI;
+
     int n = qMax(3, qCeil(M_PI/acos(radius/(error+radius))));
     double outrad = radius / qCos(M_PI/n);
     double realError = outrad - radius;
@@ -154,11 +161,10 @@ static QVector<lc_Gcodedlg::Line> arcToLines(QPointF center, double radius, doub
         return QPointF(center.x() + outrad * qCos(angle),
                        center.y() + outrad * qSin(angle));
     };
-    if (reversed)
-        qSwap(startAngle, endAngle);
+    int actualN = qMax(3, qCeil(n * deltaAngle / (2 * M_PI)));
     QPointF prev = pointAtAngle(startAngle);
-    for (int i = 1; i <= n; ++i) {
-        QPointF p = pointAtAngle(startAngle + i * (endAngle - startAngle) / n);
+    for (int i = 1; i <= actualN; ++i) {
+        QPointF p = pointAtAngle(startAngle + i * deltaAngle / actualN);
         lines.append(lc_Gcodedlg::Line(prev, p));
         prev = p;
     }
