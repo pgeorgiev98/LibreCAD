@@ -16,6 +16,9 @@
 #include "qc_plugininterface.h"
 #include <QDialog>
 #include <QSettings>
+#include <QString>
+#include <QVector>
+#include <QByteArray>
 
 class QSpinBox;
 class QDoubleSpinBox;
