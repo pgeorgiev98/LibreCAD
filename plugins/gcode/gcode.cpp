@@ -268,9 +268,11 @@ void lc_Gcodedlg::generateGcode()
         }
     }
 
+    QVector<Line> lines = findBestPath(m_lines);
+
     QPointF currentPosition;;
     for (int i = 0; i < m_repetitions->value(); ++i) {
-        for (Line l : m_lines) {
+        for (Line l : lines) {
             qDebug().noquote() << QString("Line from (%1, %2) to (%3, %4); current: (%5, %6)").arg(l.a.x()).arg(l.a.y()).arg(l.b.x()).arg(l.b.y()).arg(currentPosition.x()).arg(currentPosition.y());
             if (currentPosition == l.b)
                 qSwap(l.a, l.b);
@@ -374,4 +376,97 @@ void lc_Gcodedlg::writeSettings()
     m_settings.setValue("zhop_height", m_zHopHeight->value());
     m_settings.setValue("max_error", m_maxError->value());
     m_settings.setValue("repetitions", m_repetitions->value());
+}
+
+QVector<lc_Gcodedlg::Line> lc_Gcodedlg::findBestPath(const QVector<Line> &lines) const
+{
+    struct Node
+    {
+        QPointF point;
+        // The next node index and the distance to it
+        QVector<int> nextNodes;
+    };
+    struct Graph
+    {
+        QVector<Node> nodes;
+        const double epsilon;
+        Graph(double epsilon) : epsilon(epsilon) {}
+
+        // Gets the index of the node at `point`
+        // If it does not exist, it is added to the graph
+        int getNode(QPointF point)
+        {
+            for (int i = 0; i < nodes.size(); ++i)
+                if ((nodes[i].point - point).manhattanLength() < epsilon)
+                    return i;
+            nodes.append(Node{point, {}});
+            return nodes.size() - 1;
+        }
+
+        // Builds the graph
+        void addLines(const QVector<Line> &lines)
+        {
+            for (Line line : lines) {
+                int n1 = getNode(line.a);
+                int n2 = getNode(line.b);
+                if (n1 != n2) {
+                    nodes[n1].nextNodes.append(n2);
+                    nodes[n2].nextNodes.append(n1);
+                }
+            }
+        }
+    } graph(m_maxError->value());
+
+    graph.addLines(lines);
+
+    QVector<Line> solution;
+
+    for (;;) {
+        // Find the best starting position
+        // That is the closest to (0,0) leaf
+        // If no leaves exist, then the closest node is chosen
+        int start = -1;
+        {
+            int s1 = -1, s2 = -1;
+            double l1 = qInf(), l2 = qInf();
+            for (int i = 0; i < graph.nodes.size(); ++i) {
+                const Node &n = graph.nodes[i];
+                double l = QLineF(QPointF(0, 0), n.point).length();
+                if (n.nextNodes.size() == 1) {
+                    if (l < l1) {
+                        l1 = l;
+                        s1 = i;
+                    }
+                } else if (!n.nextNodes.isEmpty()) {
+                    if (l < l2) {
+                        l2 = l;
+                        s2 = i;
+                    }
+                }
+            }
+            if (s1 != -1)
+                start = s1;
+            else if (s2 != -1)
+                start = s2;
+            else
+                break;
+        }
+
+        // Make a path by just choosing the first adjacent node (TODO?)
+        // The path is added to `solution` and all of its edges are removed from the graph
+        int current = start;
+        for (;;) {
+            Node &node = graph.nodes[current];
+            int next = -1;
+            if (node.nextNodes.isEmpty())
+                break;
+            next = node.nextNodes.first();
+            node.nextNodes.removeOne(next);
+            graph.nodes[next].nextNodes.removeOne(current);
+            solution.append(Line(node.point, graph.nodes[next].point));
+            current = next;
+        }
+    }
+
+    return solution;
 }

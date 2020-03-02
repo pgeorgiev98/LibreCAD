@@ -53,6 +53,7 @@ private slots:
     void readSettings();
     void writeSettings();
     void generateGcode();
+    QVector<Line> findBestPath(const QVector<Line> &lines) const;
 
 private:
     Document_Interface *m_doc;
