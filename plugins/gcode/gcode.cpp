@@ -226,28 +226,28 @@ void lc_Gcodedlg::generateGcode()
         switch(data.value(DPI::ETYPE).toInt()) {
         case DPI::LINE: {
             QPointF a, b;
-            a.setX(data.value(DPI::STARTX).toFloat());
-            a.setY(data.value(DPI::STARTY).toFloat());
-            b.setX(data.value(DPI::ENDX).toFloat());
-            b.setY(data.value(DPI::ENDY).toFloat());
+            a.setX(data.value(DPI::STARTX).toDouble());
+            a.setY(data.value(DPI::STARTY).toDouble());
+            b.setX(data.value(DPI::ENDX).toDouble());
+            b.setY(data.value(DPI::ENDY).toDouble());
             m_lines.append(Line(a, b));
             break;
         }
         case DPI::CIRCLE: {
             QPointF center;
-            center.setX(data.value(DPI::STARTX).toFloat());
-            center.setY(data.value(DPI::STARTY).toFloat());
-            float radius = data.value(DPI::RADIUS).toFloat();
+            center.setX(data.value(DPI::STARTX).toDouble());
+            center.setY(data.value(DPI::STARTY).toDouble());
+            double radius = data.value(DPI::RADIUS).toDouble();
             m_lines.append(arcToLines(center, radius, maxError, 0, 2 * M_PI, false));
             break;
         }
         case DPI::ARC: {
             QPointF center;
-            center.setX(data.value(DPI::STARTX).toFloat());
-            center.setY(data.value(DPI::STARTY).toFloat());
-            float radius = data.value(DPI::RADIUS).toFloat();
-            float startAngle = data.value(DPI::STARTANGLE).toFloat();
-            float endAngle = data.value(DPI::ENDANGLE).toFloat();
+            center.setX(data.value(DPI::STARTX).toDouble());
+            center.setY(data.value(DPI::STARTY).toDouble());
+            double radius = data.value(DPI::RADIUS).toDouble();
+            double startAngle = data.value(DPI::STARTANGLE).toDouble();
+            double endAngle = data.value(DPI::ENDANGLE).toDouble();
             bool reversed = data.value(DPI::REVERSED).toBool();
             m_lines.append(arcToLines(center, radius, maxError, startAngle, endAngle, reversed));
             break;
